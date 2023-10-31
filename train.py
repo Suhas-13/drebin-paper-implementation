@@ -5,7 +5,7 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
 import re
-from utils import *
+from features import *
 
 benign_apps = []
 for filename in os.listdir(BENIGN_DIR):
