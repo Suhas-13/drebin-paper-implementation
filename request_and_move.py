@@ -3,43 +3,41 @@ import wget
 import pandas as pd
 import csv
 import json 
-from constants import *
-import os
+import argparse
 from itertools import islice
 
-exist_file_list = []
-API_KEY = open("api.txt").read().strip()
-DATASET_URL = "https://androzoo.uni.lu/api/download?apikey=" + API_KEY + "&sha256="
-X_combined = json.loads(open(os.path.join(DATA_DIR, "drebin-combined-meta.json")).read())
-Y = json.loads(open(os.path.join(DATA_DIR, "drebin-combined-Y.json")).read())
+def read_api_key(api_file):
+    with open(api_file, 'r') as f:
+        api_key = f.read().strip()
+    return api_key
 
-os.makedirs(BENIGN_DIR, exist_ok=True)
-os.makedirs(MALICIOUS_DIR, exist_ok=True)
+def download_apks(csv_file, dataset_url, benign_dir, malicious_dir, labels_file=None):
+    exist_file_list = os.listdir(benign_dir) + os.listdir(malicious_dir)
 
-with open(os.path.join(DATA_DIR, "tong.csv"), encoding='utf-8-sig') as f:
-    reader = csv.reader(f)
+    # Read labels from labels_file
+    if labels_file:
+        with open(labels_file, 'r') as f:
+            labels = json.load(f)
+    else:
+        labels = None
 
-    for row in islice(reader, 1, None):
-        print(row)
-        if not row:
-            continue
-        name = row[1]
-        url = DATASET_URL+name
-        path = './'+name+'.apk'
-        name_temp = name+'.apk'
-        if name_temp not in exist_file_list:
-            wget.download(url,path)
-        else:
-            print("exist")
-        
-        idx = 0
+    with open(csv_file, encoding='utf-8-sig') as f:
+        reader = csv.reader(f)
 
-        for i in range(len(X_combined)):
-            if X_combined[i]['sha256'] == name:
-                idx = i
-                break
-        
-        if Y[idx] == 1:
-            os.rename(path, os.path.join(MALICIOUS_DIR, name_temp))
-        else:
-            os.rename(path, os.path.join(BENIGN_DIR, name_temp))
+        for row in islice(reader, 1, None):
+            print(row)
+            if not row:
+                continue
+            name = row[1]
+            url = dataset_url + name
+            # Determine whether the APK is benign or malicious based on labels_file
+            if not labels:
+                apk_label = "unknown"
+            else:
+                apk_label = 'benign' if labels[name] == 0 else 'malicious'
+
+            path = os.path.join(benign_dir if apk_label == 'benign' else malicious_dir if apk_label == 'malicious' else 'unknown', name + '.apk')
+            if name + '.apk' not in exist_file_list:
+                wget.download(url, path)
+            else:
+                print("exist")
