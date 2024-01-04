@@ -6,9 +6,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
 import re
 from features import *
+import joblib
 
 
-def train(all_apps, all_labels):
+def train(all_apps, all_labels, model_file):
     all_features = [extract_features_from_apk(app) for app in all_apps]
     vec = DictVectorizer()
     feature_matrix = vec.fit_transform(all_features).toarray()
@@ -19,3 +20,7 @@ def train(all_apps, all_labels):
 
     y_pred = clf.predict(X_test)
     print(classification_report(y_test, y_pred))
+
+    joblib.dump(clf, model_file) 
+
+    return clf, X_test, y_test

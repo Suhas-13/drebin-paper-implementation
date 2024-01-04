@@ -23,7 +23,7 @@ def evaluate_model(clf, X_test, y_test):
     # Precision-Recall curve
     precision, recall, _ = precision_recall_curve(y_test, y_score)
 
-    return tpr_at_fpr1, precision, recall
+    return tpr_at_fpr1, precision, recall, fpr, tpr
 
 def plot_pr_curve(precision, recall):
     plt.figure()

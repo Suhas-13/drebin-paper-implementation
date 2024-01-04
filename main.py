@@ -7,6 +7,9 @@ from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
 from request_and_move import download_apks, read_api_key
+from evaluate import evaluate_model, plot_pr_curve, plot_roc_curve
+from train import train
+from features import extract_features_from_apk
 
 def get_app_paths(directory):
     app_paths = []
@@ -17,7 +20,7 @@ def get_app_paths(directory):
 
 def extract_features_and_labels(benign_apps, malicious_apps):
     all_apps = benign_apps + malicious_apps
-    all_features = [extract_features(app) for app in all_apps]
+    all_features = [extract_features_from_apk(app) for app in all_apps]
     all_labels = [0] * len(benign_apps) + [1] * len(malicious_apps)
     return all_features, all_labels
 
@@ -28,12 +31,6 @@ def read_features_and_labels(json_file, labels_file):
         all_labels = json.load(f)
     return all_features, all_labels
 
-def train_model(all_features, all_labels, model_file):
-    X_train, X_test, y_train, y_test = train_test_split(all_features, all_labels, test_size=0.2)
-    model = MyModel()
-    model.fit(X_train, y_train)
-    joblib.dump(model, model_file)
-    return X_test, y_test
 
 def test_model(model_file, X_test):
     model = joblib.load(model_file)
@@ -83,13 +80,12 @@ def main():
         all_features, all_labels = read_features_and_labels(args.json_file, args.labels_file)
 
     if args.train:
-        X_test, y_test = train_model(all_features, all_labels, args.model_file)
-
-    if args.test:
-        predictions = test_model(args.model_file, X_test)
+        X_test, y_test = train(all_features, all_labels, args.model_file)
 
     if args.evaluate:
-        print(classification_report(y_test, predictions))
+        tpr_at_fpr1, precision, recall, fpr, tpr = evaluate_model(args.model_file, X_test, y_test)
+        plot_pr_curve(precision, recall)
+        plot_roc_curve(fpr, tpr, tpr_at_fpr1)
 
 if __name__ == "__main__":
     main()
